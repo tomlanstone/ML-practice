@@ -4,7 +4,7 @@ import webbrowser
 import folium
 
 coordinates = []
-with open("coordinates.csv", "r") as f:
+with open("DBSCAN_output.csv", "r") as f:
     reader = csv.reader(f)
     header = next(reader) # skip the header row
     for row in reader:
@@ -46,8 +46,3 @@ map = plot_points_on_map(coordinates)
 map_name = "Locations.html"
 map.save(map_name)
 webbrowser.open(map_name)
-
-
-
-
-
