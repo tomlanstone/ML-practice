@@ -30,7 +30,7 @@ def find_mid_point(points):
 ## Later on, when adapted to work with data from csv, change the labeller to take in something useful like sampleEventID 
 def plot_points_on_map(points):
     mid = find_mid_point(points)
-    map = folium.Map(location=mid, zoom_start=2) # center the map on UK
+    map = folium.Map(location=mid, zoom_start=6.2) # center the map on UK
     count = 1
     for point in points:
         lat, long, cluster, colour = point
@@ -43,6 +43,6 @@ def plot_points_on_map(points):
     return map
 
 map = plot_points_on_map(coordinates)
-map_name = "Locations.html"
+map_name = "map.html"
 map.save(map_name)
 webbrowser.open(map_name)
