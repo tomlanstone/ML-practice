@@ -1,9 +1,7 @@
-import webbrowser
-import folium
-from geopy.geocoders import Nominatim
-import pandas as pd
 import csv
+import webbrowser
 
+import folium
 
 coordinates = []
 with open("coordinates.csv", "r") as f:
@@ -12,7 +10,9 @@ with open("coordinates.csv", "r") as f:
     for row in reader:
         lat = float(row[0])
         long = float(row[1])
-        coordinates.append([lat,long])
+        cluster = row[2]
+        colour = row[3]
+        coordinates.append([lat,long,cluster,colour])
     
 ## Formula for mean of a list
 def list_mean(x):
@@ -30,14 +30,14 @@ def find_mid_point(points):
 ## Later on, when adapted to work with data from csv, change the labeller to take in something useful like sampleEventID 
 def plot_points_on_map(points):
     mid = find_mid_point(points)
-    map = folium.Map(location=mid, zoom_start=17) # center the map on UK
+    map = folium.Map(location=mid, zoom_start=2) # center the map on UK
     count = 1
     for point in points:
-        lat, long = point
-        label = str(count)
+        lat, long, cluster, colour = point
+        label = f"{lat}, {long} <br><br>{cluster}: {colour}"
         iframe = folium.IFrame(label)
-        popup = folium.Popup(iframe, min_width=200, max_width=300)
-        folium.CircleMarker(location=[lat, long], radius=5, color='red', popup=popup).add_to(map)
+        popup = folium.Popup(iframe, min_width=400,  max_width=400, min_height = 00, max_height = 100)
+        folium.CircleMarker(location=[lat, long], radius=5, color=colour, popup=popup).add_to(map)
         count += 1
     folium.CircleMarker(location=mid, radius=10, color='green', popup= "mid point").add_to(map)
     return map
