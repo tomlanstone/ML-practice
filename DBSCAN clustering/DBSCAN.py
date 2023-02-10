@@ -68,7 +68,7 @@ def save_output(dataframe,name):
         for row in dataframe.to_numpy():
             writer.writerow(row)
 
-def number_to_color(number, cmap_name='viridis'):
+def number_to_color(number, cmap_name='rainbow'):
     cmap = plt.get_cmap(cmap_name)
     color = cmap(number)
     return color
@@ -83,28 +83,22 @@ dbscan = DBSCAN(eps=30, min_samples=4)
 with open("coordinates.csv", "r") as f:
     reader = csv.reader(f)
     header = next(reader) # skip the header row
-    coordinates = []
+    data = []
     for row in reader:
-        lat = float(row[0])
-        long = float(row[1])
-        coordinates.append([lat, long])
+        new_row = []
+        for i in row:
+            new_row.append(float(i))
+        data.append(new_row)
+ 
+data = np.array(data)
 
-coordinates = np.array(coordinates)
-
-dbscan.fit(coordinates)
-
-clusters = dbscan.labels_
-
-lat = [i[1] for i in coordinates]
-long = [i[0] for i in coordinates]
-colours = []
-for i in clusters:
-    colours.append(rgba_to_hex(number_to_color(i/max(clusters),"rainbow")))
-
+dbscan.fit(data)
+    
 df = pd.DataFrame(columns=('Latitude','Longitude','Cluster','Colour'))
-df['Latitude'] = lat
-df['Longitude'] = long
-df['Cluster'] = clusters
-df['Colour'] = colours
+df['Latitude'] = [i[1] for i in data]
+df['Longitude'] = [i[0] for i in data]
+df['Cluster'] = dbscan.labels_
+df['Colour'] =  [(rgba_to_hex(number_to_color(i/max(df['Cluster']),"rainbow"))) for i in df['Cluster']]
 
-save_output(df, "coordinates.csv")
+
+save_output(df, "DBSCAN_output.csv")
