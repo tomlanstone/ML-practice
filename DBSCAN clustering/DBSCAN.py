@@ -3,18 +3,6 @@ import csv
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from geopy.distance import geodesic
-
-
-def generate_random_coordinates(n, x_min, x_max, y_min, y_max):
-    x = np.random.uniform(x_min, x_max, size=n)
-    y = np.random.uniform(y_min, y_max, size=n)
-    return np.column_stack((x, y))
-
-
-# Function to calculate distance between coordinates
-def geo_distance(p1, p2):
-    return geodesic(p1, p2).km
 
 # Function to calculate the Euclidean distance between two points
 def euclidean_distance(p1, p2):
@@ -28,7 +16,7 @@ class DBSCAN:
         # min_samples is the minimum number of samples in a neighborhood around a sample for it to be considered a core sample
         self.min_samples = min_samples
         
-    def fit(self, X, geo = False):
+    def fit(self, X):
         # Store the input data
         self.X = X
         # Initialize the labels to -1, indicating that they haven't been assigned to a cluster yet
@@ -43,7 +31,7 @@ class DBSCAN:
                 continue
                 
             # Find the neighbors of the sample
-            neighbors = self._region_query(i, geo)
+            neighbors = self._region_query(i)
             # If the number of neighbors is less than the minimum required, mark it as noise
             if len(neighbors) < self.min_samples:
                 self.labels_[i] = -1
@@ -56,21 +44,17 @@ class DBSCAN:
             
             # Expand the cluster to include all neighboring samples that are also core samples
             for j in neighbors:
-                neighbors2 = self._region_query(j, geo)
+                neighbors2 = self._region_query(j)
                 if len(neighbors2) >= self.min_samples:
                     neighbors = np.union1d(neighbors, neighbors2)
                     
     # Helper function to find the neighbors of a sample within a distance of eps
-    def _region_query(self, p, geo = False):
+    def _region_query(self, p):
         neighbors = []
         for i in range(self.X.shape[0]):
-            # Check if the sample is within a distance of eps from the current sample
-            if geo == True:
-                if geo_distance(self.X[p], self.X[i]):
-                    neighbors.append(i)
-            if geo == False:        
-                if euclidean_distance(self.X[p], self.X[i]) <= self.eps:
-                    neighbors.append(i)
+            # Check if the sample is within a distance of eps from the current sample        
+            if euclidean_distance(self.X[p], self.X[i]) <= self.eps:
+                neighbors.append(i)
                 
         # Return the array of indices of the neighboring samples
         return np.array(neighbors)
@@ -83,7 +67,6 @@ def save_output(dataframe,name):
         writer.writerow(["y", "x", "cluster", "colour"])
         for row in dataframe.to_numpy():
             writer.writerow(row)
-            #print(row)
 
 def number_to_color(number, cmap_name='viridis'):
     cmap = plt.get_cmap(cmap_name)
@@ -95,25 +78,28 @@ def rgba_to_hex(rgba):
     hex_color = '#{:02x}{:02x}{:02x}'.format(int(r * 255), int(g * 255), int(b * 255))
     return hex_color
 
-X = np.array([[1, 2], [2, 2], [2, 3], [8, 7], [8, 8], [25, 80]])
-coordinates = generate_random_coordinates(100, -180, 180, -90, 90)
-
 dbscan = DBSCAN(eps=30, min_samples=4)
+
+with open("coordinates.csv", "r") as f:
+    reader = csv.reader(f)
+    header = next(reader) # skip the header row
+    coordinates = []
+    for row in reader:
+        lat = float(row[0])
+        long = float(row[1])
+        coordinates.append([lat, long])
+
+coordinates = np.array(coordinates)
+
 dbscan.fit(coordinates)
 
 clusters = dbscan.labels_
 
-
-X = coordinates
-lat = [i[1] for i in X]
-long = [i[0] for i in X]
+lat = [i[1] for i in coordinates]
+long = [i[0] for i in coordinates]
 colours = []
 for i in clusters:
     colours.append(rgba_to_hex(number_to_color(i/max(clusters),"rainbow")))
-
-
-
-plt.get_cmap('rainbow')(clusters / max(clusters))
 
 df = pd.DataFrame(columns=('Latitude','Longitude','Cluster','Colour'))
 df['Latitude'] = lat
