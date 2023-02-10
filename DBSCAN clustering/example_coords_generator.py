@@ -14,6 +14,5 @@ def save_coords(dataframe,name):
         for row in dataframe.to_numpy():
             writer.writerow(row)
 
-coordinates = generate_random_coordinates(n = 150)
-
-save_coords(coordinates,"coordinates.csv")
+coordinates = generate_random_coordinates(n = 150, x_min = -10, x_max = 1, y_min = 50, y_max = 60)
+save_coords(coordinates,"UK.csv")
