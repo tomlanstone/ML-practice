@@ -1,13 +1,16 @@
-import numpy as np
-from geopy.distance import geodesic
 import csv
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from geopy.distance import geodesic
+
 
 def generate_random_coordinates(n, x_min, x_max, y_min, y_max):
     x = np.random.uniform(x_min, x_max, size=n)
     y = np.random.uniform(y_min, y_max, size=n)
     return np.column_stack((x, y))
 
-coordinates = generate_random_coordinates(100, 0, 100, 0, 100)
 
 # Function to calculate distance between coordinates
 def geo_distance(p1, p2):
@@ -72,16 +75,50 @@ class DBSCAN:
         # Return the array of indices of the neighboring samples
         return np.array(neighbors)
 
-X = np.array([[1, 2], [2, 2], [2, 3], [8, 7], [8, 8], [25, 80]])
+## Write coordinates to csv for the plotter to plot on the map - later will need to make the script able to do the plotting itself and include cluster identification
+def save_output(dataframe,name):
 
-dbscan = DBSCAN(eps=3, min_samples=2)
+    with open(name, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["y", "x", "cluster", "colour"])
+        for row in dataframe.to_numpy():
+            writer.writerow(row)
+            #print(row)
+
+def number_to_color(number, cmap_name='viridis'):
+    cmap = plt.get_cmap(cmap_name)
+    color = cmap(number)
+    return color
+    
+def rgba_to_hex(rgba):
+    r, g, b, a = rgba
+    hex_color = '#{:02x}{:02x}{:02x}'.format(int(r * 255), int(g * 255), int(b * 255))
+    return hex_color
+
+X = np.array([[1, 2], [2, 2], [2, 3], [8, 7], [8, 8], [25, 80]])
+coordinates = generate_random_coordinates(100, -180, 180, -90, 90)
+
+dbscan = DBSCAN(eps=30, min_samples=4)
 dbscan.fit(coordinates)
 
-print(dbscan.labels_)
+clusters = dbscan.labels_
 
-## Write coordinates to csv for the plotter to plot on the map - later will need to make the script able to do the plotting itself and include cluster identification
-with open("coordinates.csv", "w", newline="") as f:
-    writer = csv.writer(f)
-    writer.writerow(["y", "x"])
-    for row in coordinates:
-        writer.writerow(row)
+
+X = coordinates
+lat = [i[1] for i in X]
+long = [i[0] for i in X]
+colours = []
+for i in clusters:
+    colours.append(rgba_to_hex(number_to_color(i/max(clusters),"rainbow")))
+
+
+
+plt.get_cmap('rainbow')(clusters / max(clusters))
+
+df = pd.DataFrame(columns=('Latitude','Longitude','Cluster','Colour'))
+df['Latitude'] = lat
+df['Longitude'] = long
+df['Cluster'] = clusters
+df['Colour'] = colours
+
+save_output(df, "coordinates.csv")
