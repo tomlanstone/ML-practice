@@ -61,44 +61,52 @@ class DBSCAN:
 
 ## Write coordinates to csv for the plotter to plot on the map - later will need to make the script able to do the plotting itself and include cluster identification
 def save_output(dataframe,name):
-
     with open(name, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["y", "x", "cluster", "colour"])
         for row in dataframe.to_numpy():
             writer.writerow(row)
 
+## Assign colours based on cluster number
 def number_to_color(number, cmap_name='rainbow'):
     cmap = plt.get_cmap(cmap_name)
     color = cmap(number)
     return color
-    
+
+## Convert the colour to hex cos the plotter gets upset by cmap colours
 def rgba_to_hex(rgba):
     r, g, b, a = rgba
     hex_color = '#{:02x}{:02x}{:02x}'.format(int(r * 255), int(g * 255), int(b * 255))
     return hex_color
 
-dbscan = DBSCAN(eps=30, min_samples=4)
+def read_data_csv(file_name, headers = True):
+    ## Read in data from csv
+    with open(file_name, "r") as f:
+        reader = csv.reader(f)
+        if headers == True: header = next(reader) # skip the header row
+        data = []
+        for row in reader:
+            new_row = []
+            for i in row:
+                new_row.append(float(i))
+            data.append(new_row)
+    ## Output as a Numpy Array for the model to use 
+    return np.array(data)
 
-with open("coordinates.csv", "r") as f:
-    reader = csv.reader(f)
-    header = next(reader) # skip the header row
-    data = []
-    for row in reader:
-        new_row = []
-        for i in row:
-            new_row.append(float(i))
-        data.append(new_row)
- 
-data = np.array(data)
+## Initiate model for global data
+full_globe = DBSCAN(eps=30, min_samples=4)
+uk = DBSCAN(eps = 1, min_samples= 2)
 
-dbscan.fit(data)
-    
-df = pd.DataFrame(columns=('Latitude','Longitude','Cluster','Colour'))
-df['Latitude'] = [i[1] for i in data]
-df['Longitude'] = [i[0] for i in data]
-df['Cluster'] = dbscan.labels_
-df['Colour'] =  [(rgba_to_hex(number_to_color(i/max(df['Cluster']),"rainbow"))) for i in df['Cluster']]
+## Fit the data to the model
+data = read_data_csv("UK.csv", headers = True)
+full_globe.fit(data)
+uk.fit(data)
+def build_map_input(model, data):
+    df = pd.DataFrame(columns=('Latitude','Longitude','Cluster','Colour'))
+    df['Latitude'] = [i[1] for i in data]
+    df['Longitude'] = [i[0] for i in data]
+    df['Cluster'] = model.labels_
+    df['Colour'] =  [(rgba_to_hex(number_to_color(i/max(df['Cluster']),"rainbow"))) for i in df['Cluster']]
+    save_output(df, "DBSCAN_output.csv")
 
-
-save_output(df, "DBSCAN_output.csv")
+build_map_input(uk,data)
