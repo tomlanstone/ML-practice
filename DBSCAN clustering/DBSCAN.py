@@ -3,18 +3,22 @@ import csv
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from geopy.distance import geodesic
 
 # Function to calculate the Euclidean distance between two points
-def euclidean_distance(p1, p2):
-    return np.sqrt(np.sum((p1 - p2)**2))
+def distance_calculator(p1, p2, method):
+    if method.lower() == "euclidean": return np.sqrt(np.sum((p1 - p2)**2))
+    if method.lower() == "geo": return geodesic(p1, p2).km
 
 # DBSCAN class
 class DBSCAN:
-    def __init__(self, eps=0.5, min_samples=5):
+    def __init__(self, eps=0.5, min_samples=5, distance_method = "Euclidean"):
         # eps is the maximum distance between two samples for them to be considered as part of the same cluster
         self.eps = eps
         # min_samples is the minimum number of samples in a neighborhood around a sample for it to be considered a core sample
         self.min_samples = min_samples
+
+        self.distance_method = distance_method
         
     def fit(self, X):
         # Store the input data
@@ -53,7 +57,7 @@ class DBSCAN:
         neighbors = []
         for i in range(self.X.shape[0]):
             # Check if the sample is within a distance of eps from the current sample        
-            if euclidean_distance(self.X[p], self.X[i]) <= self.eps:
+            if distance_calculator(self.X[p], self.X[i],  self.distance_method) <= self.eps:
                 neighbors.append(i)
                 
         # Return the array of indices of the neighboring samples
@@ -70,14 +74,20 @@ def save_output(dataframe,name):
 ## Assign colours based on cluster number
 def number_to_color(number, cmap_name='rainbow'):
     cmap = plt.get_cmap(cmap_name)
-    color = cmap(number)
-    return color
+    if float(number) <0:
+        colour = "black"
+    else:
+        colour = cmap(number)
+    return colour
 
 ## Convert the colour to hex cos the plotter gets upset by cmap colours
 def rgba_to_hex(rgba):
-    r, g, b, a = rgba
-    hex_color = '#{:02x}{:02x}{:02x}'.format(int(r * 255), int(g * 255), int(b * 255))
-    return hex_color
+    try:
+        r, g, b, a = rgba
+        hex_colour = '#{:02x}{:02x}{:02x}'.format(int(r * 255), int(g * 255), int(b * 255))
+        return hex_colour
+    except:
+        return '#000000'
 
 def read_data_csv(file_name, headers = True):
     ## Read in data from csv
@@ -94,8 +104,8 @@ def read_data_csv(file_name, headers = True):
     return np.array(data)
 
 ## Initiate model for global data
-full_globe = DBSCAN(eps=30, min_samples=4)
-uk = DBSCAN(eps = 1, min_samples= 2)
+full_globe = DBSCAN(eps=30, min_samples=4, distance_method = "geo")
+uk = DBSCAN(eps = 50, min_samples= 2, distance_method = "geo")
 
 ## Fit the data to the model
 data = read_data_csv("UK.csv", headers = True)

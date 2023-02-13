@@ -3,16 +3,20 @@ import webbrowser
 
 import folium
 
-coordinates = []
-with open("DBSCAN_output.csv", "r") as f:
-    reader = csv.reader(f)
-    header = next(reader) # skip the header row
-    for row in reader:
-        lat = float(row[0])
-        long = float(row[1])
-        cluster = row[2]
-        colour = row[3]
-        coordinates.append([lat,long,cluster,colour])
+def read_points():
+    with open("DBSCAN_output.csv", "r") as f:
+        reader = csv.reader(f)
+        header = next(reader) # skip the header row
+        coordinates = []
+        for row in reader:
+            lat = float(row[0])
+            long = float(row[1])
+            cluster = row[2]
+            colour = row[3]
+            coordinates.append([lat,long,cluster,colour])
+    return coordinates
+
+coordinates = read_points()
     
 ## Formula for mean of a list
 def list_mean(x):
