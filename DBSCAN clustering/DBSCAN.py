@@ -1,5 +1,5 @@
 import csv
-
+from joblib import Parallel, delayed
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -19,17 +19,40 @@ class DBSCAN:
         self.min_samples = min_samples
 
         self.distance_method = distance_method
-        
-    def fit(self, X):
-        # Store the input data
-        self.X = X
-        # Initialize the labels to -1, indicating that they haven't been assigned to a cluster yet
+
+    def fit_p(self, X, n_jobs=-1):
+        self.data = X
         self.labels_ = np.zeros(X.shape[0], dtype=int)
+        self.labels_.fill(-1)
+        C = 0
+
+        def process_sample(i,C):
+            if self.labels_[i] != -1:
+                return
+            neighbors = self._region_query(i)
+            if len(neighbors) < self.min_samples:
+                self.labels_[i] = -1
+                return
+            C += 1
+            self.labels_[i] = C
+            self.labels_[neighbors] = C
+            for j in neighbors:
+                neighbors2 = self._region_query(j)
+                if len(neighbors2) >= self.min_samples:
+                    neighbors = np.union1d(neighbors, neighbors2)
+
+        Parallel(n_jobs=n_jobs)(delayed(process_sample)(i,C) for i in range(data.shape[0]))
+
+    def fit(self, data):
+        # Store the input data
+        self.data = data
+        # Initialize the labels to -1, indicating that they haven't been assigned to a cluster yet
+        self.labels_ = np.zeros(data.shape[0], dtype=int)
         self.labels_.fill(-1)
         
         # Counter for the number of clusters
         C = 0
-        for i in range(X.shape[0]):
+        for i in range(data.shape[0]):
             # If the sample has already been assigned a label, skip it
             if self.labels_[i] != -1:
                 continue
@@ -51,13 +74,14 @@ class DBSCAN:
                 neighbors2 = self._region_query(j)
                 if len(neighbors2) >= self.min_samples:
                     neighbors = np.union1d(neighbors, neighbors2)
+            
                     
     # Helper function to find the neighbors of a sample within a distance of eps
     def _region_query(self, p):
         neighbors = []
-        for i in range(self.X.shape[0]):
+        for i in range(self.data.shape[0]):
             # Check if the sample is within a distance of eps from the current sample        
-            if distance_calculator(self.X[p], self.X[i],  self.distance_method) <= self.eps:
+            if distance_calculator(self.data[p], self.data[i],  self.distance_method) <= self.eps:
                 neighbors.append(i)
                 
         # Return the array of indices of the neighboring samples
@@ -101,22 +125,26 @@ def read_data_csv(file_name, headers = True):
                 new_row.append(float(i))
             data.append(new_row)
     ## Output as a Numpy Array for the model to use 
+
     return np.array(data)
 
 ## Initiate model for global data
-full_globe = DBSCAN(eps=30, min_samples=4, distance_method = "geo")
+globe = DBSCAN(eps=500, min_samples=2, distance_method="geo")
 uk = DBSCAN(eps = 50, min_samples= 2, distance_method = "geo")
 
 ## Fit the data to the model
-data = read_data_csv("UK.csv", headers = True)
-full_globe.fit(data)
-uk.fit(data)
+data = read_data_csv("cities.csv", headers = True)
+
+
+
+globe.fit_p(data)
+#uk.fit(data)
 def build_map_input(model, data):
     df = pd.DataFrame(columns=('Latitude','Longitude','Cluster','Colour'))
-    df['Latitude'] = [i[1] for i in data]
-    df['Longitude'] = [i[0] for i in data]
+    df['Latitude'] = [i[0] for i in data]
+    df['Longitude'] = [i[1] for i in data]
     df['Cluster'] = model.labels_
     df['Colour'] =  [(rgba_to_hex(number_to_color(i/max(df['Cluster']),"rainbow"))) for i in df['Cluster']]
     save_output(df, "DBSCAN_output.csv")
 
-build_map_input(uk,data)
+build_map_input(globe,data)
