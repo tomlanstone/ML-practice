@@ -181,4 +181,12 @@ def q_26(text):
 def  vocab_size(text):
     return(set(text))
 
-print(vocab_size(text2))
+## 28
+
+def percent(word, text):
+    fdist = FreqDist(text)
+    freq = fdist[word]
+    ans = freq/len(text)
+    return ans * 100
+
+print(percent("the",text6))
