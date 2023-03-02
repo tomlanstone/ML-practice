@@ -135,5 +135,50 @@ def q_18():
 def q_21():
     a = text2[-2:]
     print(a)
-q_21()
 
+## 22  Find all the four-letter words in the Chat Corpus (text5). With the help of a
+##     frequency distribution (FreqDist), show these words in decreasing order of frequency
+
+def q_22():
+    fdist = FreqDist(text5)
+    four_letter_words = [word for word in set(text5) if len(word) == 4]
+    sorted_words = sorted(four_letter_words, key=lambda word: fdist[word], reverse=True)
+    for word in sorted_words:
+        print(word, fdist[word])
+
+## 23
+
+def q_23(text):
+    for word in text:
+        if word.istitle():
+            print(word)
+
+## 24 
+
+class q_24():
+    def __init__(self,text):
+        self.text = text
+    
+    def a(self):
+        ans = [w for w in self.text if w.endswith("ize")]
+        return ans
+    def b(self):
+        ans = [w for w in self.text if "z" in w]
+        return ans
+    def c(self):
+        ans = [w for w in self.text if "pt" in w]
+        return ans
+    def d(self):
+        ans = [w for w in self.text if w.istitle()]
+        return ans
+    
+## 26
+def q_26(text):
+    return sum([len(w) for w in text]) / len(text)
+
+## 27
+
+def  vocab_size(text):
+    return(set(text))
+
+print(vocab_size(text2))
